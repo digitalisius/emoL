@@ -8,7 +8,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        /* CSS Variables untuk tema futuristik */
         :root {
             --bg-color: #12121c;
             --surface-color: #1a1a2e;
@@ -16,13 +15,10 @@
             --secondary-color: #2cb67d;
             --text-color: #fffffe;
             --glow-color: rgba(127, 90, 240, 0.5);
+            --error-color: #ff5370;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
             font-family: 'Poppins', sans-serif;
@@ -35,7 +31,6 @@
             overflow: hidden;
         }
 
-        /* Header */
         .header {
             padding: 15px 20px;
             background-color: var(--surface-color);
@@ -45,6 +40,7 @@
             flex-shrink: 0;
             border-bottom: 2px solid var(--primary-color);
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            gap: 15px;
         }
 
         .logo {
@@ -53,14 +49,12 @@
             color: var(--primary-color);
             text-shadow: 0 0 10px var(--glow-color);
         }
+        .logo span { color: var(--text-color); font-weight: 400; }
 
-        .logo span {
-            color: var(--text-color);
-            font-weight: 400;
-        }
-
-        .user-area .btn {
-            font-size: 0.9em;
+        .actions-area {
+            display: flex;
+            align-items: center;
+            gap: 15px;
         }
         
         #user-display {
@@ -70,7 +64,6 @@
             border-radius: 20px;
         }
 
-        /* Game Area */
         .game-container {
             flex-grow: 1;
             display: flex;
@@ -79,19 +72,35 @@
             position: relative;
             padding: 20px;
         }
-
-        #game-canvas {
-            background-color: #000;
+        
+        #canvas-wrapper {
+            position: relative;
             width: 100%;
             max-height: 100%;
             aspect-ratio: 240 / 160;
-            object-fit: contain;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #000;
             border-radius: 10px;
             border: 2px solid var(--primary-color);
             box-shadow: 0 0 20px var(--glow-color);
         }
 
-        /* Kontrol Virtual */
+        #game-canvas {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+        
+        #canvas-placeholder {
+            position: absolute;
+            color: #888;
+            font-size: 1.2em;
+            padding: 20px;
+        }
+
         .virtual-controls {
             position: fixed;
             bottom: 0;
@@ -105,24 +114,9 @@
             padding: 10px;
         }
 
-        .d-pad, .action-buttons {
-            position: absolute;
-            bottom: 25px;
-        }
-
-        .d-pad {
-            left: 5%;
-            width: 150px;
-            height: 150px;
-            position: relative;
-        }
-
-        .action-buttons {
-            right: 5%;
-            width: 150px;
-            height: 150px;
-            position: relative;
-        }
+        .d-pad, .action-buttons { position: absolute; bottom: 25px; }
+        .d-pad { left: 5%; width: 150px; height: 150px; position: relative; }
+        .action-buttons { right: 5%; width: 150px; height: 150px; position: relative; }
         
         .control-button {
             position: absolute;
@@ -137,87 +131,50 @@
             color: var(--secondary-color);
             transition: all 0.1s ease-in-out;
         }
-
-        .control-button svg {
-            width: 60%;
-            height: 60%;
-            fill: var(--secondary-color);
-        }
-        
+        .control-button svg { width: 60%; height: 60%; fill: var(--secondary-color); }
         .control-button.active {
             background-color: var(--secondary-color);
             box-shadow: 0 0 15px var(--secondary-color);
             transform: scale(0.95);
         }
-        .control-button.active svg {
-            fill: var(--surface-color);
-        }
+        .control-button.active svg { fill: var(--surface-color); }
+        .control-button.active { color: var(--surface-color); }
 
-        /* D-Pad Buttons */
         #btn-up { top: 0; left: 50px; width: 50px; height: 50px; border-radius: 10px 10px 0 0; }
         #btn-down { bottom: 0; left: 50px; width: 50px; height: 50px; border-radius: 0 0 10px 10px; }
         #btn-left { top: 50px; left: 0; width: 50px; height: 50px; border-radius: 10px 0 0 10px; }
         #btn-right { top: 50px; right: 0; width: 50px; height: 50px; border-radius: 0 10px 10px 0; }
 
-        /* Action Buttons (A/B) */
         #btn-a, #btn-b { width: 65px; height: 65px; border-radius: 50%; font-size: 1.5em; font-weight: bold; }
         #btn-b { top: 15px; left: 10px; }
         #btn-a { top: 15px; right: 10px; }
         
-        /* Tombol Start/Select */
         .extra-buttons {
-            position: absolute;
-            bottom: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 15px;
+            position: absolute; bottom: 10px; left: 50%;
+            transform: translateX(-50%); display: flex; gap: 15px;
         }
         .extra-buttons .control-button {
-            position: static;
-            width: 90px;
-            height: 35px;
-            border-radius: 20px;
-            font-size: 0.8em;
-            font-weight: 600;
+            position: static; width: 90px; height: 35px; border-radius: 20px;
+            font-size: 0.8em; font-weight: 600;
         }
 
-        /* Tombol Umum */
         .btn {
-            background: var(--primary-color);
-            color: var(--text-color);
-            border: none;
-            padding: 10px 18px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.2s ease;
-            box-shadow: 0 0 10px var(--glow-color);
+            background: var(--primary-color); color: var(--text-color);
+            border: none; padding: 10px 18px; border-radius: 8px;
+            cursor: pointer; font-weight: 600; font-size: 0.9em;
+            transition: all 0.2s ease; box-shadow: 0 0 10px var(--glow-color);
         }
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 0 20px var(--glow-color);
-        }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 0 20px var(--glow-color); }
         
         .hidden { display: none !important; }
-
-        /* Responsiveness for smaller screens */
-        @media (max-width: 380px) {
-            .logo { font-size: 1.2em; }
-            .user-area .btn, #user-display { font-size: 0.8em; padding: 6px 10px; }
-            .d-pad, .action-buttons { width: 120px; height: 120px; }
-            #btn-up, #btn-down, #btn-left, #btn-right { width: 40px; height: 40px; }
-            #btn-up { left: 40px; } #btn-down { left: 40px; }
-            #btn-left { top: 40px; } #btn-right { top: 40px; }
-            #btn-a, #btn-b { width: 55px; height: 55px; }
-        }
     </style>
 </head>
 <body>
 
     <header class="header">
-        <div class="logo">emoL <span>Online</span></div>
-        <div class="user-area">
+        <div class="logo">emoL</div>
+        <div class="actions-area">
+            <button id="load-rom-btn" class="btn">Muat ROM</button>
             <button id="login-btn" class="btn">Login Google</button>
             <span id="user-display" class="hidden"></span>
             <input type="file" id="rom-input" class="hidden" accept=".gba">
@@ -225,10 +182,12 @@
     </header>
 
     <main class="game-container">
-        <canvas id="game-canvas" width="240" height="160"></canvas>
+        <div id="canvas-wrapper">
+            <div id="canvas-placeholder">Silakan Muat ROM untuk Memulai</div>
+            <canvas id="game-canvas" width="240" height="160"></canvas>
+        </div>
     </main>
 
-    <!-- Kontrol Virtual -->
     <div class="virtual-controls" id="virtual-controls">
         <div class="d-pad">
             <div class="control-button" id="btn-up"><svg viewBox="0 0 24 24"><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"></path></svg></div>
@@ -236,60 +195,52 @@
             <div class="control-button" id="btn-right"><svg viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"></path></svg></div>
             <div class="control-button" id="btn-down"><svg viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"></path></svg></div>
         </div>
-        
         <div class="action-buttons">
             <div class="control-button" id="btn-b">B</div>
             <div class="control-button" id="btn-a">A</div>
         </div>
-
         <div class="extra-buttons">
-            <button class="btn" onclick="document.getElementById('rom-input').click();">MUAT ROM</button>
             <div class="control-button" id="btn-select">SELECT</div>
             <div class="control-button" id="btn-start">START</div>
         </div>
     </div>
 
-    <!-- Memuat Library Emulator (IodineGBA) -->
     <script src="https://cdn.jsdelivr.net/gh/taisel/IodineGBA/dist/iodine.js"></script>
-    
-    <!-- Memuat Library Firebase -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
         import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
 
-        // =======================================================================
-        // == WAJIB: GANTI DENGAN KONFIGURASI FIREBASE ANDA SENDIRI DI SINI! ==
-        // =======================================================================
+        // Konfigurasi Firebase Anda telah dimasukkan
         const firebaseConfig = {
-  apiKey: "AIzaSyBzh1piGyfXVCINaulqyBf7xTk1y6VxjSM",
-  authDomain: "emol-808f9.firebaseapp.com",
-  projectId: "emol-808f9",
-  storageBucket: "emol-808f9.firebasestorage.app",
-  messagingSenderId: "88216884084",
-  appId: "1:88216884084:web:7fc2bfd8fb43e6cef05221"
-};
-        // =======================================================================
+            apiKey: "AIzaSyBzh1piGyfXVCINaulqyBf7xTk1y6VxjSM",
+            authDomain: "emol-808f9.firebaseapp.com",
+            projectId: "emol-808f9",
+            storageBucket: "emol-808f9.appspot.com",
+            messagingSenderId: "88216884084",
+            appId: "1:88216884084:web:7fc2bfd8fb43e6cef05221"
+        };
 
         // Inisialisasi Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const provider = new GoogleAuthProvider();
 
-        // Variabel Global
+        // Variabel Global & Elemen DOM
         let gba;
         const canvas = document.getElementById('game-canvas');
-
-        // --- Logika Autentikasi ---
+        const canvasPlaceholder = document.getElementById('canvas-placeholder');
+        const romInput = document.getElementById('rom-input');
+        const loadRomBtn = document.getElementById('load-rom-btn');
         const loginBtn = document.getElementById('login-btn');
         const userDisplay = document.getElementById('user-display');
+        const virtualControls = document.getElementById('virtual-controls');
 
+        // --- Logika Autentikasi ---
         loginBtn.addEventListener('click', () => {
             signInWithPopup(auth, provider)
-                .then((result) => {
-                    console.log("Login berhasil:", result.user);
-                }).catch((error) => {
+                .catch((error) => {
                     console.error("Login gagal:", error);
-                    alert("Login gagal. Pastikan popup diizinkan dan coba lagi.");
+                    alert("Login gagal. Pastikan popup diizinkan oleh browser Anda dan coba lagi.");
                 });
         });
 
@@ -304,27 +255,11 @@
                 userDisplay.textContent = '';
             }
         });
+        
+        // --- Logika Muat ROM ---
+        loadRomBtn.addEventListener('click', () => romInput.click());
 
-        // --- Logika Emulator ---
-        function startEmulator(romData) {
-            try {
-                if (gba) {
-                    gba.pause(); // Hentikan emulator lama jika ada
-                }
-                gba = new IodineGBA(canvas);
-                gba.loadROM(romData);
-                console.log("Emulator dimulai.");
-                // Tampilkan kontrol virtual setelah ROM dimuat
-                if (isTouchDevice()) {
-                    document.getElementById('virtual-controls').style.display = 'block';
-                }
-            } catch (e) {
-                console.error("Gagal memulai emulator:", e);
-                alert("Gagal memuat ROM. Pastikan file adalah file GBA yang valid.");
-            }
-        }
-
-        document.getElementById('rom-input').addEventListener('change', function(e) {
+        romInput.addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (!file) return;
 
@@ -335,6 +270,22 @@
             reader.readAsBinaryString(file);
         });
 
+        // --- Logika Emulator ---
+        function startEmulator(romData) {
+            try {
+                if (gba) gba.pause();
+                gba = new IodineGBA(canvas);
+                gba.loadROM(romData);
+                canvasPlaceholder.classList.add('hidden'); // Sembunyikan pesan panduan
+                if (isTouchDevice()) {
+                    virtualControls.style.display = 'block'; // Tampilkan kontrol
+                }
+            } catch (e) {
+                console.error("Gagal memulai emulator:", e);
+                alert("Gagal memuat ROM. Pastikan file adalah file GBA yang valid.");
+            }
+        }
+
         // --- Logika Kontrol ---
         function isTouchDevice() {
             return ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
@@ -342,52 +293,30 @@
 
         const keymap = {
             "btn-up": 4, "btn-down": 5, "btn-left": 6, "btn-right": 7,
-            "btn-a": 0, "btn-b": 1,
-            "btn-start": 3, "btn-select": 2,
+            "btn-a": 0, "btn-b": 1, "btn-start": 3, "btn-select": 2,
         };
 
-        // Kontrol Virtual
-        if (isTouchDevice()) {
-            for (const [id, keyCode] of Object.entries(keymap)) {
-                const button = document.getElementById(id);
-                if (button) {
-                    button.addEventListener('touchstart', (e) => {
-                        e.preventDefault();
-                        if (gba) gba.keyPress(keyCode, true);
-                        button.classList.add('active');
-                    }, { passive: false });
-                    button.addEventListener('touchend', (e) => {
-                        e.preventDefault();
-                        if (gba) gba.keyPress(keyCode, false);
-                        button.classList.remove('active');
-                    }, { passive: false });
-                }
+        for (const [id, keyCode] of Object.entries(keymap)) {
+            const button = document.getElementById(id);
+            if (button) {
+                const press = (e) => { e.preventDefault(); if (gba) gba.keyPress(keyCode, true); button.classList.add('active'); };
+                const release = (e) => { e.preventDefault(); if (gba) gba.keyPress(keyCode, false); button.classList.remove('active'); };
+                button.addEventListener('touchstart', press, { passive: false });
+                button.addEventListener('touchend', release, { passive: false });
+                button.addEventListener('touchcancel', release, { passive: false });
             }
         }
         
-        // Kontrol Keyboard untuk PC
         const pcKeymap = {
             "ArrowUp": 4, "ArrowDown": 5, "ArrowLeft": 6, "ArrowRight": 7,
-            "KeyX": 0, // A
-            "KeyZ": 1, // B
-            "Enter": 3, // Start
-            "ShiftRight": 2, // Select
-            "KeyA": 8, // L
-            "KeyS": 9, // R
-        }
+            "KeyX": 0, "KeyZ": 1, "Enter": 3, "ShiftRight": 2, "KeyA": 8, "KeyS": 9,
+        };
 
         window.addEventListener('keydown', (e) => {
-            if (gba && pcKeymap[e.code] !== undefined) {
-                e.preventDefault();
-                gba.keyPress(pcKeymap[e.code], true);
-            }
+            if (gba && pcKeymap[e.code] !== undefined) { e.preventDefault(); gba.keyPress(pcKeymap[e.code], true); }
         });
-        
         window.addEventListener('keyup', (e) => {
-             if (gba && pcKeymap[e.code] !== undefined) {
-                e.preventDefault();
-                gba.keyPress(pcKeymap[e.code], false);
-            }
+             if (gba && pcKeymap[e.code] !== undefined) { e.preventDefault(); gba.keyPress(pcKeymap[e.code], false); }
         });
 
     </script>
