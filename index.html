@@ -94,7 +94,7 @@
             height: 100%;
             background-color: rgba(0, 0, 0, 0.7);
             backdrop-filter: blur(5px);
-            display: none; /* Diubah ke flex oleh JS */
+            display: none;
             justify-content: center;
             align-items: center;
             z-index: 1000;
@@ -137,8 +137,7 @@
         .auth-input::placeholder { color: #888; }
         .auth-input:focus { outline: none; box-shadow: 0 0 10px var(--glow-color); }
         .auth-buttons { display: flex; gap: 10px; justify-content: flex-end; }
-        /* --- AKHIR STYLING MODAL --- */
-
+        
         .virtual-controls {
             position: fixed; bottom: 0; left: 0;
             width: 100%; height: 30vh; display: none;
@@ -208,12 +207,8 @@
         <div class="logo">emoL</div>
         <div class="actions-area">
             <button id="load-rom-btn" class="btn">Muat ROM</button>
-            <input type="file" id="rom-input" class="hidden" accept=".gba">
-            
-            <!-- Tombol untuk membuka modal (saat logout) -->
+            <input type="file" id="rom-input" class="hidden" accept=".gba, .zip">
             <button id="open-auth-modal-btn" class="btn">Login / Daftar</button>
-
-            <!-- Info Pengguna (ditampilkan saat login) -->
             <div id="user-info" class="hidden">
                 <span id="user-email"></span>
                 <button id="logout-btn" class="btn">Logout</button>
@@ -228,7 +223,6 @@
         </div>
     </main>
     
-    <!-- MODAL / POP-UP UNTUK AUTENTIKASI -->
     <div id="auth-modal" class="modal-overlay">
         <div class="modal-content">
             <button id="modal-close-btn" class="modal-close-btn">&times;</button>
@@ -261,7 +255,9 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/gh/taisel/IodineGBA/dist/iodine.js"></script>
+    <!-- PENGGANTIAN EMULATOR CORE: Menggunakan GBA.js yang lebih andal -->
+    <script src="https://cdn.jsdelivr.net/gh/endrift/gbajs/gbajs.min.js"></script>
+    
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
         import { 
@@ -284,7 +280,6 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
 
-        // --- Variabel Global & Elemen DOM ---
         let gba;
         const canvas = document.getElementById('game-canvas');
         const canvasPlaceholder = document.getElementById('canvas-placeholder');
@@ -292,7 +287,6 @@
         const loadRomBtn = document.getElementById('load-rom-btn');
         const virtualControls = document.getElementById('virtual-controls');
         
-        // Elemen Auth & Modal
         const authModal = document.getElementById('auth-modal');
         const openAuthModalBtn = document.getElementById('open-auth-modal-btn');
         const modalCloseBtn = document.getElementById('modal-close-btn');
@@ -304,16 +298,14 @@
         const userEmailDisplay = document.getElementById('user-email');
         const logoutBtn = document.getElementById('logout-btn');
 
-        // --- Logika Modal ---
         const openModal = () => { authModal.style.display = 'flex'; };
         const closeModal = () => { authModal.style.display = 'none'; };
         openAuthModalBtn.addEventListener('click', openModal);
         modalCloseBtn.addEventListener('click', closeModal);
         authModal.addEventListener('click', (e) => {
-            if (e.target === authModal) closeModal(); // Tutup jika klik di luar konten
+            if (e.target === authModal) closeModal();
         });
 
-        // --- Logika Autentikasi Email/Password ---
         registerBtn.addEventListener('click', () => {
             const email = emailInput.value;
             const password = passwordInput.value;
@@ -341,59 +333,73 @@
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                // Pengguna login
                 openAuthModalBtn.classList.add('hidden');
                 userInfo.classList.remove('hidden');
                 userEmailDisplay.textContent = user.email;
-                closeModal(); // Otomatis tutup modal setelah login/daftar berhasil
+                closeModal();
             } else {
-                // Pengguna logout
                 openAuthModalBtn.classList.remove('hidden');
                 userInfo.classList.add('hidden');
             }
         });
         
-        // --- Logika Muat ROM (DIPERBAIKI) ---
+        // --- LOGIKA EMULATOR DENGAN GBA.JS (LEBIH ANDAL) ---
+        function startEmulator(file) {
+            try {
+                if (gba && gba.isPaused()) {
+                    gba.resume();
+                } else if (gba) {
+                    gba.pause();
+                }
+                
+                gba = new GameBoyAdvance();
+                gba.setCanvas(canvas);
+                
+                // Fungsi callback setelah ROM berhasil dimuat
+                gba.loadRomFromFile(file, (error) => {
+                    if (error) {
+                        console.error("Gagal memuat ROM:", error);
+                        alert("Gagal memuat ROM. File mungkin rusak atau bukan format GBA yang didukung.");
+                        return;
+                    }
+                    canvasPlaceholder.classList.add('hidden');
+                    if (isTouchDevice()) {
+                        virtualControls.style.display = 'block';
+                    }
+                    gba.runStable(); // Menjalankan emulator
+                });
+
+            } catch (e) {
+                console.error("Terjadi kesalahan pada emulator:", e);
+                alert("Gagal memulai emulator.");
+            }
+        }
+        
         loadRomBtn.addEventListener('click', () => romInput.click());
         romInput.addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (event) => startEmulator(event.target.result); // event.target.result akan menjadi ArrayBuffer
-            reader.readAsArrayBuffer(file); // Menggunakan metode yang lebih andal
+            startEmulator(file); // Langsung kirim objek File
         });
 
-        // --- Logika Emulator ---
-        function startEmulator(romDataAsArrayBuffer) {
-            try {
-                if (gba) gba.pause();
-                gba = new IodineGBA(canvas);
-                gba.loadROM(romDataAsArrayBuffer); // IodineGBA bisa langsung menangani ArrayBuffer
-                canvasPlaceholder.classList.add('hidden');
-                if (isTouchDevice()) {
-                    virtualControls.style.display = 'block';
-                }
-            } catch (e) {
-                console.error("Gagal memulai emulator:", e);
-                alert("Gagal memuat ROM. File mungkin rusak atau bukan format GBA.");
-            }
-        }
-
-        // --- Logika Kontrol ---
+        // --- LOGIKA KONTROL DISESUAIKAN UNTUK GBA.JS ---
         function isTouchDevice() {
             return ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
         }
 
         const keymap = {
-            "btn-up": 4, "btn-down": 5, "btn-left": 6, "btn-right": 7,
-            "btn-a": 0, "btn-b": 1, "btn-start": 3, "btn-select": 2,
+            "btn-a": gba.keypad.A, "btn-b": gba.keypad.B,
+            "btn-select": gba.keypad.SELECT, "btn-start": gba.keypad.START,
+            "btn-right": gba.keypad.RIGHT, "btn-left": gba.keypad.LEFT,
+            "btn-up": gba.keypad.UP, "btn-down": gba.keypad.DOWN,
+            // "btn-r": gba.keypad.R, "btn-l": gba.keypad.L,
         };
 
-        for (const [id, keyCode] of Object.entries(keymap)) {
+        for (const [id, key] of Object.entries(keymap)) {
             const button = document.getElementById(id);
             if (button) {
-                const press = (e) => { e.preventDefault(); if (gba) gba.keyPress(keyCode, true); button.classList.add('active'); };
-                const release = (e) => { e.preventDefault(); if (gba) gba.keyPress(keyCode, false); button.classList.remove('active'); };
+                const press = (e) => { e.preventDefault(); if (gba) gba.keypad.press(key); button.classList.add('active'); };
+                const release = (e) => { e.preventDefault(); if (gba) gba.keypad.release(key); button.classList.remove('active'); };
                 button.addEventListener('touchstart', press, { passive: false });
                 button.addEventListener('touchend', release, { passive: false });
                 button.addEventListener('touchcancel', release, { passive: false });
@@ -401,17 +407,20 @@
         }
         
         const pcKeymap = {
-            "ArrowUp": 4, "ArrowDown": 5, "ArrowLeft": 6, "ArrowRight": 7,
-            "KeyX": 0, "KeyZ": 1, "Enter": 3, "ShiftRight": 2, "KeyA": 8, "KeyS": 9,
+            "KeyX": gba.keypad.A, "KeyZ": gba.keypad.B,
+            "ShiftRight": gba.keypad.SELECT, "Enter": gba.keypad.START,
+            "ArrowRight": gba.keypad.RIGHT, "ArrowLeft": gba.keypad.LEFT,
+            "ArrowUp": gba.keypad.UP, "ArrowDown": gba.keypad.DOWN,
+            "KeyS": gba.keypad.R, "KeyA": gba.keypad.L,
         };
 
         window.addEventListener('keydown', (e) => {
             if (document.activeElement.tagName === 'INPUT') return;
-            if (gba && pcKeymap[e.code] !== undefined) { e.preventDefault(); gba.keyPress(pcKeymap[e.code], true); }
+            if (gba && pcKeymap[e.code] !== undefined) { e.preventDefault(); gba.keypad.press(pcKeymap[e.code]); }
         });
         window.addEventListener('keyup', (e) => {
             if (document.activeElement.tagName === 'INPUT') return;
-             if (gba && pcKeymap[e.code] !== undefined) { e.preventDefault(); gba.keyPress(pcKeymap[e.code], false); }
+             if (gba && pcKeymap[e.code] !== undefined) { e.preventDefault(); gba.keypad.release(pcKeymap[e.code]); }
         });
 
     </script>
