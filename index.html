@@ -32,7 +32,7 @@
         }
 
         .header {
-            padding: 15px 20px;
+            padding: 12px 20px;
             background-color: var(--surface-color);
             display: flex;
             justify-content: space-between;
@@ -49,20 +49,28 @@
             color: var(--primary-color);
             text-shadow: 0 0 10px var(--glow-color);
         }
-        .logo span { color: var(--text-color); font-weight: 400; }
 
         .actions-area {
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 10px;
         }
         
-        #user-display {
-            font-size: 0.9em;
-            background-color: rgba(255,255,255,0.1);
-            padding: 8px 12px;
-            border-radius: 20px;
+        /* Styling untuk Form Login Email/Password */
+        #login-form { display: flex; gap: 8px; align-items: center; }
+        .auth-input {
+            background-color: rgba(0,0,0,0.3);
+            border: 1px solid var(--primary-color);
+            color: var(--text-color);
+            padding: 8px 10px;
+            border-radius: 5px;
+            font-family: 'Poppins', sans-serif;
         }
+        .auth-input::placeholder { color: #888; }
+        .auth-input:focus { outline: none; box-shadow: 0 0 10px var(--glow-color); }
+        
+        #user-info { display: flex; align-items: center; gap: 15px; }
+        #user-email { font-size: 0.9em; background-color: rgba(255,255,255,0.1); padding: 8px 12px; border-radius: 20px; }
 
         .game-container {
             flex-grow: 1;
@@ -87,29 +95,13 @@
             box-shadow: 0 0 20px var(--glow-color);
         }
 
-        #game-canvas {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            border-radius: 8px;
-        }
-        
-        #canvas-placeholder {
-            position: absolute;
-            color: #888;
-            font-size: 1.2em;
-            padding: 20px;
-        }
+        #game-canvas { width: 100%; height: 100%; object-fit: contain; border-radius: 8px; }
+        #canvas-placeholder { position: absolute; color: #888; font-size: 1.2em; padding: 20px; }
 
         .virtual-controls {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 30vh;
-            display: none;
-            user-select: none;
-            -webkit-user-select: none;
+            position: fixed; bottom: 0; left: 0;
+            width: 100%; height: 30vh; display: none;
+            user-select: none; -webkit-user-select: none;
             background: linear-gradient(to top, rgba(18, 18, 28, 0.95), transparent);
             padding: 10px;
         }
@@ -123,7 +115,6 @@
             background-color: rgba(44, 182, 125, 0.2);
             border: 1px solid var(--secondary-color);
             backdrop-filter: blur(5px);
-            -webkit-backdrop-filter: blur(5px);
             opacity: 0.8;
             display: flex;
             justify-content: center;
@@ -136,9 +127,9 @@
             background-color: var(--secondary-color);
             box-shadow: 0 0 15px var(--secondary-color);
             transform: scale(0.95);
+            color: var(--surface-color);
         }
         .control-button.active svg { fill: var(--surface-color); }
-        .control-button.active { color: var(--surface-color); }
 
         #btn-up { top: 0; left: 50px; width: 50px; height: 50px; border-radius: 10px 10px 0 0; }
         #btn-down { bottom: 0; left: 50px; width: 50px; height: 50px; border-radius: 0 0 10px 10px; }
@@ -160,13 +151,20 @@
 
         .btn {
             background: var(--primary-color); color: var(--text-color);
-            border: none; padding: 10px 18px; border-radius: 8px;
+            border: none; padding: 8px 15px; border-radius: 8px;
             cursor: pointer; font-weight: 600; font-size: 0.9em;
-            transition: all 0.2s ease; box-shadow: 0 0 10px var(--glow-color);
+            transition: all 0.2s ease;
         }
-        .btn:hover { transform: translateY(-2px); box-shadow: 0 0 20px var(--glow-color); }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 0 15px var(--glow-color); }
+        .btn.secondary { background-color: var(--secondary-color); }
         
         .hidden { display: none !important; }
+
+        /* Responsiveness for smaller screens */
+        @media (max-width: 768px) {
+            .header { flex-direction: column; gap: 12px; }
+            #login-form { flex-wrap: wrap; justify-content: center; }
+        }
     </style>
 </head>
 <body>
@@ -175,9 +173,21 @@
         <div class="logo">emoL</div>
         <div class="actions-area">
             <button id="load-rom-btn" class="btn">Muat ROM</button>
-            <button id="login-btn" class="btn">Login Google</button>
-            <span id="user-display" class="hidden"></span>
             <input type="file" id="rom-input" class="hidden" accept=".gba">
+            
+            <!-- Form Login (ditampilkan saat logout) -->
+            <div id="login-form">
+                <input type="email" id="email-input" class="auth-input" placeholder="Email">
+                <input type="password" id="password-input" class="auth-input" placeholder="Password">
+                <button id="login-btn" class="btn">Masuk</button>
+                <button id="register-btn" class="btn secondary">Daftar</button>
+            </div>
+
+            <!-- Info Pengguna (ditampilkan saat login) -->
+            <div id="user-info" class="hidden">
+                <span id="user-email"></span>
+                <button id="logout-btn" class="btn">Logout</button>
+            </div>
         </div>
     </header>
 
@@ -208,9 +218,14 @@
     <script src="https://cdn.jsdelivr.net/gh/taisel/IodineGBA/dist/iodine.js"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
-        import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
+        import { 
+            getAuth, 
+            createUserWithEmailAndPassword, 
+            signInWithEmailAndPassword, 
+            onAuthStateChanged,
+            signOut
+        } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
 
-        // Konfigurasi Firebase Anda telah dimasukkan
         const firebaseConfig = {
             apiKey: "AIzaSyBzh1piGyfXVCINaulqyBf7xTk1y6VxjSM",
             authDomain: "emol-808f9.firebaseapp.com",
@@ -220,53 +235,84 @@
             appId: "1:88216884084:web:7fc2bfd8fb43e6cef05221"
         };
 
-        // Inisialisasi Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
-        const provider = new GoogleAuthProvider();
 
-        // Variabel Global & Elemen DOM
+        // --- Variabel Global & Elemen DOM ---
         let gba;
         const canvas = document.getElementById('game-canvas');
         const canvasPlaceholder = document.getElementById('canvas-placeholder');
         const romInput = document.getElementById('rom-input');
         const loadRomBtn = document.getElementById('load-rom-btn');
-        const loginBtn = document.getElementById('login-btn');
-        const userDisplay = document.getElementById('user-display');
         const virtualControls = document.getElementById('virtual-controls');
+        
+        // Elemen Auth
+        const loginForm = document.getElementById('login-form');
+        const emailInput = document.getElementById('email-input');
+        const passwordInput = document.getElementById('password-input');
+        const loginBtn = document.getElementById('login-btn');
+        const registerBtn = document.getElementById('register-btn');
+        const userInfo = document.getElementById('user-info');
+        const userEmailDisplay = document.getElementById('user-email');
+        const logoutBtn = document.getElementById('logout-btn');
 
-        // --- Logika Autentikasi ---
+        // --- Logika Autentikasi Email/Password ---
+        registerBtn.addEventListener('click', () => {
+            const email = emailInput.value;
+            const password = passwordInput.value;
+            if (!email || !password) {
+                alert("Email dan password tidak boleh kosong.");
+                return;
+            }
+            createUserWithEmailAndPassword(auth, email, password)
+                .then((userCredential) => {
+                    console.log("Pendaftaran berhasil:", userCredential.user);
+                    alert("Pendaftaran berhasil! Anda sekarang sudah login.");
+                })
+                .catch((error) => {
+                    console.error("Pendaftaran gagal:", error);
+                    alert(`Pendaftaran gagal: ${error.message}`);
+                });
+        });
+
         loginBtn.addEventListener('click', () => {
-            signInWithPopup(auth, provider)
+            const email = emailInput.value;
+            const password = passwordInput.value;
+             if (!email || !password) {
+                alert("Email dan password tidak boleh kosong.");
+                return;
+            }
+            signInWithEmailAndPassword(auth, email, password)
                 .catch((error) => {
                     console.error("Login gagal:", error);
-                    alert("Login gagal. Pastikan popup diizinkan oleh browser Anda dan coba lagi.");
+                    alert(`Login gagal: ${error.message}`);
                 });
+        });
+
+        logoutBtn.addEventListener('click', () => {
+            signOut(auth);
         });
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                loginBtn.classList.add('hidden');
-                userDisplay.classList.remove('hidden');
-                userDisplay.textContent = `Halo, ${user.displayName.split(' ')[0]}`;
+                // Pengguna login
+                loginForm.classList.add('hidden');
+                userInfo.classList.remove('hidden');
+                userEmailDisplay.textContent = user.email;
             } else {
-                loginBtn.classList.remove('hidden');
-                userDisplay.classList.add('hidden');
-                userDisplay.textContent = '';
+                // Pengguna logout
+                loginForm.classList.remove('hidden');
+                userInfo.classList.add('hidden');
             }
         });
         
         // --- Logika Muat ROM ---
         loadRomBtn.addEventListener('click', () => romInput.click());
-
         romInput.addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (!file) return;
-
             const reader = new FileReader();
-            reader.onload = function(event) {
-                startEmulator(event.target.result);
-            };
+            reader.onload = (event) => startEmulator(event.target.result);
             reader.readAsBinaryString(file);
         });
 
@@ -276,9 +322,9 @@
                 if (gba) gba.pause();
                 gba = new IodineGBA(canvas);
                 gba.loadROM(romData);
-                canvasPlaceholder.classList.add('hidden'); // Sembunyikan pesan panduan
+                canvasPlaceholder.classList.add('hidden');
                 if (isTouchDevice()) {
-                    virtualControls.style.display = 'block'; // Tampilkan kontrol
+                    virtualControls.style.display = 'block';
                 }
             } catch (e) {
                 console.error("Gagal memulai emulator:", e);
@@ -313,9 +359,11 @@
         };
 
         window.addEventListener('keydown', (e) => {
+            if (e.target.tagName.toLowerCase() === 'input') return; // Jangan tangkap input keyboard saat di form
             if (gba && pcKeymap[e.code] !== undefined) { e.preventDefault(); gba.keyPress(pcKeymap[e.code], true); }
         });
         window.addEventListener('keyup', (e) => {
+            if (e.target.tagName.toLowerCase() === 'input') return;
              if (gba && pcKeymap[e.code] !== undefined) { e.preventDefault(); gba.keyPress(pcKeymap[e.code], false); }
         });
 
