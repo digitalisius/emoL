@@ -167,6 +167,24 @@
         .btn.secondary { background-color: var(--secondary-color); }
         
         .hidden { display: none !important; }
+
+        @media (max-width: 640px) {
+            .header {
+                flex-direction: column;
+                gap: 12px;
+                padding: 15px;
+            }
+            .actions-area {
+                width: 100%;
+                justify-content: space-between;
+            }
+            #user-email {
+                max-width: 120px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+        }
     </style>
 </head>
 <body>
@@ -237,214 +255,128 @@
             signOut
         } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyBzh1piGyfXVCINaulqyBf7xTk1y6VxjSM",
-            authDomain: "emol-808f9.firebaseapp.com",
-            projectId: "emol-808f9",
-            storageBucket: "emol-808f9.appspot.com",
-            messagingSenderId: "88216884084",
-            appId: "1:88216884084:web:7fc2bfd8fb43e6cef05221"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-
-        let gba;
-        let currentRomName = null;
-        const dom = {
-            canvas: document.getElementById('game-canvas'),
-            canvasPlaceholder: document.getElementById('canvas-placeholder'),
-            romInput: document.getElementById('rom-input'),
-            loadRomBtn: document.getElementById('load-rom-btn'),
-            virtualControls: document.getElementById('virtual-controls'),
-            authModal: document.getElementById('auth-modal'),
-            openAuthModalBtn: document.getElementById('open-auth-modal-btn'),
-            modalCloseBtn: document.getElementById('modal-close-btn'),
-            emailInput: document.getElementById('email-input'),
-            passwordInput: document.getElementById('password-input'),
-            loginBtn: document.getElementById('login-btn'),
-            registerBtn: document.getElementById('register-btn'),
-            userInfo: document.getElementById('user-info'),
-            userEmailDisplay: document.getElementById('user-email'),
-            logoutBtn: document.getElementById('logout-btn'),
-            saveBtn: document.getElementById('btn-save'),
-            loadBtn: document.getElementById('btn-load'),
-        };
-
-        // --- Logika Modal ---
-        const openModal = () => { dom.authModal.style.display = 'flex'; };
-        const closeModal = () => { dom.authModal.style.display = 'none'; };
-        dom.openAuthModalBtn.addEventListener('click', openModal);
-        dom.modalCloseBtn.addEventListener('click', closeModal);
-        dom.authModal.addEventListener('click', (e) => {
-            if (e.target === dom.authModal) closeModal();
-        });
-
-        // --- Logika Autentikasi ---
-        dom.registerBtn.addEventListener('click', () => {
-            const email = dom.emailInput.value;
-            const password = dom.passwordInput.value;
-            if (!email || password.length < 6) {
-                alert("Email tidak valid atau password kurang dari 6 karakter.");
-                return;
-            }
-            createUserWithEmailAndPassword(auth, email, password)
-                .then(() => alert("Pendaftaran berhasil! Anda sekarang sudah login."))
-                .catch((error) => alert(`Pendaftaran gagal: ${error.message}`));
-        });
-
-        dom.loginBtn.addEventListener('click', () => {
-            const email = dom.emailInput.value;
-            const password = dom.passwordInput.value;
-            if (!email || !password) {
-                alert("Email dan password tidak boleh kosong.");
-                return;
-            }
-            signInWithEmailAndPassword(auth, email, password)
-                .catch((error) => alert(`Login gagal: ${error.message}`));
-        });
-
-        dom.logoutBtn.addEventListener('click', () => signOut(auth));
-
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                dom.openAuthModalBtn.classList.add('hidden');
-                dom.userInfo.classList.remove('hidden');
-                dom.userEmailDisplay.textContent = user.email;
-                closeModal();
-            } else {
-                dom.openAuthModalBtn.classList.remove('hidden');
-                dom.userInfo.classList.add('hidden');
-            }
-        });
-        
-        // --- LOGIKA EMULATOR DENGAN BIOS TERTANAM ---
-        const GBA_BIOS_BASE64 = "AGWCwCn/AADUAAAAAAAQAAAAgAAAAICAAAAgAAAAAAAAAAABJAAAAAAAAAJEAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAA-";
-        
-        function base64ToUint8(base64) {
-            const binaryString = window.atob(base64);
-            const len = binaryString.length;
-            const bytes = new Uint8Array(len);
-            for (let i = 0; i < len; i++) {
-                bytes[i] = binaryString.charCodeAt(i);
-            }
-            return bytes;
-        }
-
-        function startEmulator(file) {
-            try {
-                if (gba && gba.isPaused()) gba.resume();
-                else if (gba) gba.pause();
-                
-                gba = new GameBoyAdvance();
-                gba.setCanvas(dom.canvas);
-                gba.setBios(base64ToUint8(GBA_BIOS_BASE64).buffer);
-                
-                gba.loadRomFromFile(file, (error) => {
-                    if (error) {
-                        console.error("Gagal memuat ROM:", error);
-                        alert("Gagal memuat ROM. File mungkin rusak atau bukan format GBA yang didukung.");
-                        return;
-                    }
-                    currentRomName = file.name.replace(/\.[^/.]+$/, ""); // Simpan nama ROM tanpa ekstensi
-                    dom.canvasPlaceholder.classList.add('hidden');
-                    if (isTouchDevice()) dom.virtualControls.style.display = 'block';
-                    setupControls(); // PENTING: Atur kontrol setelah GBA siap
-                    gba.runStable();
-                });
-
-            } catch (e) {
-                console.error("Terjadi kesalahan pada emulator:", e);
-                alert("Gagal memulai emulator.");
-                gba = null;
-            }
-        }
-        
-        dom.loadRomBtn.addEventListener('click', () => dom.romInput.click());
-        dom.romInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            startEmulator(file);
-        });
-
-        // --- Logika Simpan & Muat Progres (Lokal) ---
-        dom.saveBtn.addEventListener('click', () => {
-            if (!gba || !currentRomName) {
-                alert("Muat ROM terlebih dahulu sebelum menyimpan!");
-                return;
-            }
-            try {
-                const saveData = gba.freeze();
-                localStorage.setItem(`emol_save_${currentRomName}`, JSON.stringify(saveData));
-                alert(`Progres untuk ${currentRomName} berhasil disimpan!`);
-            } catch (e) {
-                alert("Gagal menyimpan progres.");
-                console.error("Save error:", e);
-            }
-        });
-
-        dom.loadBtn.addEventListener('click', () => {
-            if (!gba || !currentRomName) {
-                alert("Muat ROM yang sama terlebih dahulu sebelum memuat progres!");
-                return;
-            }
-            try {
-                const savedData = localStorage.getItem(`emol_save_${currentRomName}`);
-                if (savedData) {
-                    gba.defrost(JSON.parse(savedData));
-                    alert(`Progres untuk ${currentRomName} berhasil dimuat!`);
-                } else {
-                    alert(`Tidak ada data simpanan untuk ${currentRomName}.`);
-                }
-            } catch (e) {
-                alert("Gagal memuat progres.");
-                console.error("Load error:", e);
-            }
-        });
-
-        // --- Logika Kontrol (Diperbaiki) ---
-        function isTouchDevice() {
-            return ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-        }
-        
-        function setupControls() {
-            if (!gba) return; // Pastikan GBA ada
-
-            const keymap = {
-                "btn-a": gba.keypad.A, "btn-b": gba.keypad.B,
-                "btn-select": gba.keypad.SELECT, "btn-start": gba.keypad.START,
-                "btn-right": gba.keypad.RIGHT, "btn-left": gba.keypad.LEFT,
-                "btn-up": gba.keypad.UP, "btn-down": gba.keypad.DOWN,
+        // --- KODE HANYA BERJALAN SETELAH HALAMAN SIAP ---
+        window.addEventListener('DOMContentLoaded', () => {
+            const firebaseConfig = {
+                apiKey: "AIzaSyBzh1piGyfXVCINaulqyBf7xTk1y6VxjSM",
+                authDomain: "emol-808f9.firebaseapp.com",
+                projectId: "emol-808f9",
+                storageBucket: "emol-808f9.appspot.com",
+                messagingSenderId: "88216884084",
+                appId: "1:88216884084:web:7fc2bfd8fb43e6cef05221"
             };
 
-            for (const [id, key] of Object.entries(keymap)) {
-                const button = document.getElementById(id);
-                if (button) {
-                    const press = (e) => { e.preventDefault(); gba.keypad.press(key); button.classList.add('active'); };
-                    const release = (e) => { e.preventDefault(); gba.keypad.release(key); button.classList.remove('active'); };
-                    button.addEventListener('touchstart', press, { passive: false });
-                    button.addEventListener('touchend', release, { passive: false });
-                    button.addEventListener('touchcancel', release, { passive: false });
+            const app = initializeApp(firebaseConfig);
+            const auth = getAuth(app);
+
+            let gba;
+            let currentRomName = null;
+            const dom = {
+                canvas: document.getElementById('game-canvas'),
+                canvasPlaceholder: document.getElementById('canvas-placeholder'),
+                romInput: document.getElementById('rom-input'),
+                loadRomBtn: document.getElementById('load-rom-btn'),
+                virtualControls: document.getElementById('virtual-controls'),
+                authModal: document.getElementById('auth-modal'),
+                openAuthModalBtn: document.getElementById('open-auth-modal-btn'),
+                modalCloseBtn: document.getElementById('modal-close-btn'),
+                emailInput: document.getElementById('email-input'),
+                passwordInput: document.getElementById('password-input'),
+                loginBtn: document.getElementById('login-btn'),
+                registerBtn: document.getElementById('register-btn'),
+                userInfo: document.getElementById('user-info'),
+                userEmailDisplay: document.getElementById('user-email'),
+                logoutBtn: document.getElementById('logout-btn'),
+                saveBtn: document.getElementById('btn-save'),
+                loadBtn: document.getElementById('btn-load'),
+            };
+
+            // --- INISIALISASI EMULATOR DI AWAL ---
+            function initializeEmulator() {
+                try {
+                    gba = new GameBoyAdvance();
+                    gba.setCanvas(dom.canvas);
+                    const GBA_BIOS_BASE64 = "AGWCwCn/AADUAAAAAAAQAAAAgAAAAICAAAAgAAAAAAAAAAABJAAAAAAAAAJEAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAAAAAACRAAAAA-";
+                    const bios = base64ToUint8(GBA_BIOS_BASE64).buffer;
+                    gba.setBios(bios);
+                    setupControls(); // Siapkan kontrol setelah GBA siap
+                    return true;
+                } catch(e) {
+                    console.error("GBA.js failed to initialize:", e);
+                    alert("Fatal Error: Komponen inti emulator gagal dimuat. Coba refresh halaman.");
+                    return false;
                 }
             }
             
-            const pcKeymap = {
-                "KeyX": gba.keypad.A, "KeyZ": gba.keypad.B,
-                "ShiftRight": gba.keypad.SELECT, "Enter": gba.keypad.START,
-                "ArrowRight": gba.keypad.RIGHT, "ArrowLeft": gba.keypad.LEFT,
-                "ArrowUp": gba.keypad.UP, "ArrowDown": gba.keypad.DOWN,
-                "KeyS": gba.keypad.R, "KeyA": gba.keypad.L,
-            };
+            function base64ToUint8(base64) {
+                const binaryString = window.atob(base64);
+                const len = binaryString.length;
+                const bytes = new Uint8Array(len);
+                for (let i = 0; i < len; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+                return bytes;
+            }
 
-            window.onkeydown = (e) => {
-                if (document.activeElement.tagName === 'INPUT') return;
-                if (pcKeymap[e.code] !== undefined) { e.preventDefault(); gba.keypad.press(pcKeymap[e.code]); }
-            };
-            window.onkeyup = (e) => {
-                if (document.activeElement.tagName === 'INPUT') return;
-                if (pcKeymap[e.code] !== undefined) { e.preventDefault(); gba.keypad.release(pcKeymap[e.code]); }
-            };
-        }
+            function loadRom(file) {
+                if (!gba) {
+                    alert("Emulator belum siap. Coba lagi sebentar.");
+                    return;
+                }
+                try {
+                    gba.loadRomFromFile(file, (error) => {
+                        if (error) {
+                            console.error("Gagal memuat ROM:", error);
+                            alert("Gagal memuat ROM. File mungkin rusak atau bukan format GBA yang didukung.");
+                            return;
+                        }
+                        currentRomName = file.name.replace(/\.[^/.]+$/, "");
+                        dom.canvasPlaceholder.classList.add('hidden');
+                        if (isTouchDevice()) dom.virtualControls.style.display = 'block';
+                        gba.runStable();
+                    });
+                } catch(e) {
+                    console.error("Error saat memuat ROM:", e);
+                    alert("Terjadi kesalahan tak terduga saat memuat ROM.");
+                }
+            }
+            
+            function setupControls() {
+                if (!gba) return;
+                const keymap = { "btn-a": gba.keypad.A, "btn-b": gba.keypad.B, "btn-select": gba.keypad.SELECT, "btn-start": gba.keypad.START, "btn-right": gba.keypad.RIGHT, "btn-left": gba.keypad.LEFT, "btn-up": gba.keypad.UP, "btn-down": gba.keypad.DOWN };
+                for (const [id, key] of Object.entries(keymap)) {
+                    const button = document.getElementById(id);
+                    if (button) {
+                        const press = (e) => { e.preventDefault(); if(gba) gba.keypad.press(key); button.classList.add('active'); };
+                        const release = (e) => { e.preventDefault(); if(gba) gba.keypad.release(key); button.classList.remove('active'); };
+                        button.addEventListener('touchstart', press, { passive: false });
+                        button.addEventListener('touchend', release, { passive: false });
+                        button.addEventListener('touchcancel', release, { passive: false });
+                    }
+                }
+                const pcKeymap = { "KeyX": gba.keypad.A, "KeyZ": gba.keypad.B, "ShiftRight": gba.keypad.SELECT, "Enter": gba.keypad.START, "ArrowRight": gba.keypad.RIGHT, "ArrowLeft": gba.keypad.LEFT, "ArrowUp": gba.keypad.UP, "ArrowDown": gba.keypad.DOWN, "KeyS": gba.keypad.R, "KeyA": gba.keypad.L };
+                window.onkeydown = (e) => { if (document.activeElement.tagName === 'INPUT') return; if (gba && pcKeymap[e.code] !== undefined) { e.preventDefault(); gba.keypad.press(pcKeymap[e.code]); } };
+                window.onkeyup = (e) => { if (document.activeElement.tagName === 'INPUT') return; if (gba && pcKeymap[e.code] !== undefined) { e.preventDefault(); gba.keypad.release(pcKeymap[e.code]); } };
+            }
+
+            // --- Event Listeners ---
+            const openModal = () => { dom.authModal.style.display = 'flex'; };
+            const closeModal = () => { dom.authModal.style.display = 'none'; };
+            dom.openAuthModalBtn.addEventListener('click', openModal);
+            dom.modalCloseBtn.addEventListener('click', closeModal);
+            dom.authModal.addEventListener('click', (e) => { if (e.target === dom.authModal) closeModal(); });
+            dom.registerBtn.addEventListener('click', () => { const e = dom.emailInput.value, p = dom.passwordInput.value; if (!e || p.length < 6) { alert("Email tidak valid atau password kurang dari 6 karakter."); return; } createUserWithEmailAndPassword(auth, e, p).then(() => alert("Pendaftaran berhasil!")).catch((err) => alert(`Gagal: ${err.message}`)); });
+            dom.loginBtn.addEventListener('click', () => { const e = dom.emailInput.value, p = dom.passwordInput.value; if (!e || !p) { alert("Email dan password tidak boleh kosong."); return; } signInWithEmailAndPassword(auth, e, p).catch((err) => alert(`Gagal: ${err.message}`)); });
+            dom.logoutBtn.addEventListener('click', () => signOut(auth));
+            onAuthStateChanged(auth, (user) => { if (user) { dom.openAuthModalBtn.classList.add('hidden'); dom.userInfo.classList.remove('hidden'); dom.userEmailDisplay.textContent = user.email; closeModal(); } else { dom.openAuthModalBtn.classList.remove('hidden'); dom.userInfo.classList.add('hidden'); } });
+            dom.loadRomBtn.addEventListener('click', () => dom.romInput.click());
+            dom.romInput.addEventListener('change', (e) => { const file = e.target.files[0]; if (file) loadRom(file); });
+            dom.saveBtn.addEventListener('click', () => { if (!gba || !currentRomName) { alert("Muat ROM dahulu!"); return; } try { const data = gba.freeze(); localStorage.setItem(`emol_save_${currentRomName}`, JSON.stringify(data)); alert(`Progres untuk ${currentRomName} disimpan!`); } catch (e) { alert("Gagal menyimpan."); } });
+            dom.loadBtn.addEventListener('click', () => { if (!gba || !currentRomName) { alert("Muat ROM yang sama dahulu!"); return; } try { const data = localStorage.getItem(`emol_save_${currentRomName}`); if (data) { gba.defrost(JSON.parse(data)); alert(`Progres untuk ${currentRomName} dimuat!`); } else { alert(`Tidak ada simpanan untuk ${currentRomName}.`); } } catch (e) { alert("Gagal memuat."); } });
+
+            // --- Mulai Semuanya ---
+            initializeEmulator();
+        });
     </script>
 </body>
 </html>
